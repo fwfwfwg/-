@@ -1,0 +1,144 @@
+import random
+import time
+import sys
+import tkinter as tk
+
+# 设置测试时间为240秒
+test_time = 25
+
+# 问题集合，每个问题包含一个问题和答案
+questions = [
+    ("settle down to", "专心于"),
+    ("settle up with", "向某人支付"),
+    ("3+3=?", "6"),
+    ("5+5=?", "10"),
+    ("6+6=?", "12"),
+    ("7+7=?", "14"),
+    ("8+8=?", "16"),
+    ("9+9=?", "18"),
+    ("10+10=?", "20"),
+    ("11+11=?", "22")
+]
+
+# 记录每个问题出现的次数
+question_count = [0] * len(questions)
+
+# 记录回答正确的问题数
+correct_count = 0
+
+# 记录回答错误的问题及其正确答案
+wrong_questions = []
+
+# 记录测试开始时间
+start_time = 0
+
+# 当前问题的索引
+current_question_index = -1
+
+# 初始化tkinter窗口
+root = tk.Tk()
+root.title("数学小测试")
+root.geometry("800x800")
+root.configure(bg="white")
+
+# 设置题目标签
+question_label = tk.Label(root, text="欢迎来到小测试", font=("楷体", 40), bg="white")
+question_label.pack(pady=20)
+
+# 设置倒计时标签
+time_label = tk.Label(root, text=f"剩余时间: {test_time}s", font=("楷体", 28), bg="white")
+time_label.pack(pady=10)
+
+# 设置答案输入框
+answer_entry = tk.Entry(root, font=("楷体", 30), width=50, justify="center")
+answer_entry.pack(pady=100)
+
+# 设置答案提示标签
+answer_label = tk.Label(root, text="", font=("楷体", 30), bg="white")
+answer_label.pack(pady=10)
+
+# 设置正确率标签
+accuracy_label = tk.Label(root, text="", font=("楷体", 16), bg="white")
+accuracy_label.pack(pady=10)
+
+def get_next_question():
+    """获取下一个问题"""
+
+    global current_question_index
+    current_question_index = random.randint(0, len(questions)-1)
+    question_count[current_question_index] += 1
+    return questions[current_question_index][0]
+
+def check_answer():
+    """检查答案"""
+
+    global correct_count
+    answer = answer_entry.get().strip().lower()
+    if answer == questions[current_question_index][1].lower():
+        answer_label.config(text="回答正确", fg="green")
+        correct_count += 1
+    else:
+        answer_label.config(text=f"回答错误，正确答案是 {questions[current_question_index][1]}", fg="red")
+        wrong_questions.append((questions[current_question_index][0], questions[current_question_index][1]))
+        question_count[current_question_index] += 1
+
+    answer_entry.delete(0, tk.END)
+
+def update_ui():
+    """更新界面"""
+
+    global test_time
+
+    # 获取下一个问题
+    question = get_next_question()
+    question_label.config(text=question)
+
+    # 更新剩余时间
+    time_label.config(text=f"剩余时间: {test_time}s")
+
+    # 更新正确率
+    if correct_count + len(wrong_questions) > 0:
+        accuracy = correct_count / (correct_count + len(wrong_questions)) * 100
+        accuracy_label.config(text=f"正确率: {accuracy:.1f}%")
+
+    # 如果测试时间已到，停止测试
+    if test_time == 0:
+        root.after_cancel(update_ui_job)
+        answer_entry.config(state="disabled")
+        answer_label.config(text="")
+        question_label.config(text=f"测试结束，你回答了 {correct_count} 题，正确率为 {accuracy:.1f}%。")
+        return
+
+    # 更新剩余时间
+    test_time -= 1
+
+    # 更新界面
+    update_ui_job = root.after(1000, update_ui)
+
+# 绑定回车键
+root.bind("<Return>", lambda event: check_answer())
+
+# 启动测试
+start_time = time.time()
+update_ui()
+root.mainloop()
+
+# 输出答错问题及正确答案
+if len(wrong_questions) > 0:
+    print("以下是你回答错误的问题及正确答案：")
+    for question, answer in wrong_questions:
+        print(f"{question}，正确答案是 {answer}")
+else:
+    print("恭喜你，全部回答正确！")
+
+# 输出测试结果
+print(f"你一共回答了 {len(questions)} 题，其中 {correct_count} 题回答正确，正确率为 {accuracy:.1f}%。")
+
+# 保存测试结果到文件
+with open("test_results.txt", "a") as f:
+    f.write(f"测试时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    f.write(f"测试问题总数：{len(questions)}\n")
+    f.write(f"测试正确数：{correct_count}\n")
+    f.write(f"测试正确率：{accuracy:.1f}%\n")
+    f.write("\n")
+
